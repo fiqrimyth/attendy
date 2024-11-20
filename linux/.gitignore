@@ -1,0 +1,8 @@
+flutter/ephemeral
+build/
+*.dex
+*.apk
+*.tab.values.at
+*.pbxproj
+*.so
+*.log
