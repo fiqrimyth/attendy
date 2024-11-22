@@ -16,25 +16,20 @@ class ApplicationAbsencePermitScreen extends StatefulWidget {
 
 class _ApplicationAbsencePermitScreenState
     extends State<ApplicationAbsencePermitScreen> {
+  // MARK: - Properties & Controllers
   final _formKey = GlobalKey<FormState>();
+  final _reasonController = TextEditingController();
+  final _picker = ImagePicker();
 
-  // Form controllers
+  // Form state
   String? selectedCategoryId;
   String? selectedCategory;
   String? selectedDate;
   String? selectedDelegate;
   String? selectedFile;
-  final TextEditingController _reasonController = TextEditingController();
+  String? fileBase64;
 
-  // Cek apakah form valid
-  bool get isFormValid {
-    return selectedCategoryId != null &&
-        selectedDate != null &&
-        selectedDelegate != null;
-    // File dan alasan opsional, jadi tidak perlu divalidasi
-  }
-
-  // Tambahkan list kategori
+  // Data Lists
   final List<Map<String, String>> categories = [
     {'id': '1', 'name': 'Sakit', 'type': ''},
     {'id': '2', 'name': 'Khitanan Anak', 'type': '(Special Leave)'},
@@ -53,13 +48,6 @@ class _ApplicationAbsencePermitScreenState
     },
   ];
 
-  // Tambahkan variable untuk file
-  final ImagePicker _picker = ImagePicker();
-
-  // Tambahkan variable untuk menyimpan base64
-  String? fileBase64;
-
-  // Tambahkan list delegasi
   final List<String> delegations = [
     'Faizah Haryanti',
     'Hasna Laksmiwati',
@@ -69,120 +57,14 @@ class _ApplicationAbsencePermitScreenState
     'Intan Yulianti',
   ];
 
-  // Dalam class _ApplicationPermitScreenState, tambahkan method showCategoryPicker
-  void showCategoryPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFEEEEEE),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: const Text(
-                    'Kategori Izin',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      final isSelected = category['id'] == selectedCategoryId;
-
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            selectedCategoryId = category['id'];
-                          });
-
-                          this.setState(() {
-                            selectedCategory = category['name'];
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Color(0xFFEEEEEE),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Wrap(
-                                  spacing: 4,
-                                  children: [
-                                    Text(
-                                      category['name']!,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: isSelected
-                                            ? Theme.of(context).primaryColor
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                    if (category['type']!.isNotEmpty)
-                                      Text(
-                                        category['type']!,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (isSelected)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Theme.of(context).primaryColor,
-                                    size: 24,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  // MARK: - Computed Properties
+  bool get isFormValid {
+    return selectedCategoryId != null &&
+        selectedDate != null &&
+        selectedDelegate != null;
   }
 
-  // Format untuk tampilan di form
+  // MARK: - Date Formatting Methods
   String _formatDisplayDate(DateTime date) {
     final List<String> months = [
       'Januari',
@@ -198,11 +80,9 @@ class _ApplicationAbsencePermitScreenState
       'November',
       'Desember'
     ];
-
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  // Format untuk dikirim ke server
   String _formatServerDate(DateTime date) {
     final List<String> months = [
       'JAN',
@@ -218,12 +98,11 @@ class _ApplicationAbsencePermitScreenState
       'NOV',
       'DEC'
     ];
-
     String day = date.day.toString().padLeft(2, '0');
     return '$day${months[date.month - 1]}${date.year}';
   }
 
-  // Tambahkan fungsi untuk memilih file
+  // MARK: - File Handling Methods
   void _showFilePickerOptions() {
     showDialog(
       context: context,
@@ -338,10 +217,8 @@ class _ApplicationAbsencePermitScreenState
     );
   }
 
-  // Fungsi untuk mengambil gambar
   Future<void> _pickImage(ImageSource source) async {
     try {
-      // Reset file sebelumnya
       setState(() {
         selectedFile = null;
         fileBase64 = null;
@@ -433,7 +310,6 @@ class _ApplicationAbsencePermitScreenState
         return;
       }
 
-      // Convert ke base64
       final bytes = await file.readAsBytes();
       if (mounted) {
         setState(() {
@@ -450,7 +326,119 @@ class _ApplicationAbsencePermitScreenState
     }
   }
 
-  // Tambahkan fungsi untuk menampilkan bottom sheet delegasi
+  // MARK: - Picker Methods
+  void showCategoryPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Color(0xFFEEEEEE),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: const Text(
+                    'Kategori Izin',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      final isSelected = category['id'] == selectedCategoryId;
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedCategoryId = category['id'];
+                          });
+
+                          this.setState(() {
+                            selectedCategory = category['name'];
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Color(0xFFEEEEEE),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 4,
+                                  children: [
+                                    Text(
+                                      category['name']!,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isSelected
+                                            ? Theme.of(context).primaryColor
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    if (category['type']!.isNotEmpty)
+                                      Text(
+                                        category['type']!,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 24,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void showDelegationPicker() {
     showModalBottomSheet(
       context: context,
@@ -550,6 +538,7 @@ class _ApplicationAbsencePermitScreenState
     );
   }
 
+  // MARK: - Dialog Methods
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -601,10 +590,9 @@ class _ApplicationAbsencePermitScreenState
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Pop dialog dan screen pengajuan izin
                       Navigator.of(context)
-                        ..pop() // Pop dialog
-                        ..pop(); // Pop screen pengajuan izin
+                        ..pop()
+                        ..pop();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2B67F6),
@@ -631,7 +619,7 @@ class _ApplicationAbsencePermitScreenState
     );
   }
 
-  // Panggil dialog setelah sukses mengirim data
+  // MARK: - Form Methods
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -641,7 +629,6 @@ class _ApplicationAbsencePermitScreenState
         // Tampilkan dialog sukses
         _showSuccessDialog();
       } catch (e) {
-        // Handle error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
@@ -649,6 +636,7 @@ class _ApplicationAbsencePermitScreenState
     }
   }
 
+  // MARK: - Build Methods
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -792,19 +780,19 @@ class _ApplicationAbsencePermitScreenState
                                       headerForegroundColor: Colors.black,
                                       surfaceTintColor: Colors.white,
                                       dayBackgroundColor:
-                                          WidgetStateProperty.resolveWith(
+                                          MaterialStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(WidgetState.selected)) {
+                                            .contains(MaterialState.selected)) {
                                           return Theme.of(context).primaryColor;
                                         }
                                         return null;
                                       }),
                                       todayBackgroundColor:
-                                          WidgetStateProperty.resolveWith(
+                                          MaterialStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(WidgetState.selected)) {
+                                            .contains(MaterialState.selected)) {
                                           return Theme.of(context).primaryColor;
                                         }
                                         return Colors.transparent;
@@ -814,25 +802,25 @@ class _ApplicationAbsencePermitScreenState
                                         width: 1,
                                       ),
                                       dayForegroundColor:
-                                          WidgetStateProperty.resolveWith(
+                                          MaterialStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(WidgetState.selected)) {
+                                            .contains(MaterialState.selected)) {
                                           return Colors.white;
                                         }
                                         return Colors.black;
                                       }),
                                       yearForegroundColor:
-                                          WidgetStateProperty.resolveWith(
+                                          MaterialStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(WidgetState.selected)) {
+                                            .contains(MaterialState.selected)) {
                                           return Colors.white;
                                         }
                                         return Colors.black;
                                       }),
                                       dayOverlayColor:
-                                          WidgetStateProperty.resolveWith(
+                                          MaterialStateProperty.resolveWith(
                                               (states) {
                                         return Colors.transparent;
                                       }),
@@ -844,7 +832,6 @@ class _ApplicationAbsencePermitScreenState
                             );
                             if (date != null) {
                               setState(() {
-                                // Simpan dalam format ISO untuk internal state
                                 selectedDate = date.toIso8601String();
                               });
                             }

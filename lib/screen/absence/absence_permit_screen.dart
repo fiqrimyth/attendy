@@ -1,6 +1,6 @@
 import 'package:attendy/model/permit_history.dart';
 import 'package:attendy/screen/absence/absence_request/application_absence_permit_screen.dart';
-import 'package:attendy/screen/absence/detail/detail_permit_screen.dart';
+import 'package:attendy/screen/absence/detail/absence_detail_permit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -122,7 +122,8 @@ class AbsencePermitScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DetailPermitScreen(permit: history),
+                builder: (context) =>
+                    AbsenceDetailPermitScreen(permit: history),
               ),
             );
           },
@@ -185,14 +186,8 @@ class AbsencePermitScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<PermitHistory> histories = [
-      // PermitHistory(
-      //   date: '22 April 2024',
-      //   type: 'Sakit',
-      //   description: 'Demam Tinggi',
-      //   permitType: PermitType.absence,
-      // ),
-    ];
+    final List<PermitHistory> histories =
+        PermitHistory.getDummyData(filterType: PermitType.absence);
 
     return Scaffold(
       appBar: AppBar(

@@ -1,4 +1,5 @@
 import 'package:attendy/model/permit_history.dart';
+import 'package:attendy/screen/leave/detail/leave_detail_permit_screen.dart';
 import 'package:attendy/screen/leave/leave_request/application_leave_permit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -118,12 +119,12 @@ class LeavePermitScreen extends StatelessWidget {
             color: Colors.black45,
           ),
           onTap: () {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => DetailPermitScreen(permit: history),
-            //   ),
-            // );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LeaveDetailPermitScreen(permit: history),
+              ),
+            );
           },
         );
       },
@@ -184,14 +185,8 @@ class LeavePermitScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<PermitHistory> histories = [
-      PermitHistory(
-        date: '22 April 2024',
-        type: 'Cuti Tahunan',
-        description: '2 hari',
-        permitType: PermitType.leave,
-      ),
-    ];
+    final List<PermitHistory> histories =
+        PermitHistory.getDummyData(filterType: PermitType.leave);
 
     return Scaffold(
       appBar: AppBar(

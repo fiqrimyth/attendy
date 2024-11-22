@@ -108,4 +108,32 @@ class PermitHistory {
       delegate,
     );
   }
+
+  static List<PermitHistory> getDummyData({PermitType? filterType}) {
+    final allData = [
+      PermitHistory(
+        date: '22 April 2024',
+        type: 'Cuti Tahunan',
+        description: '2 hari',
+        permitType: PermitType.leave,
+      ),
+      PermitHistory(
+        date: '22 April 2024',
+        type: 'Sakit',
+        description: 'Demam Tinggi',
+        permitType: PermitType.absence,
+      ),
+      PermitHistory(
+        date: '23 April 2024',
+        type: 'Lembur',
+        description: 'Project Deadline',
+        permitType: PermitType.overtime,
+      ),
+    ];
+
+    if (filterType != null) {
+      return allData.where((item) => item.permitType == filterType).toList();
+    }
+    return allData;
+  }
 }

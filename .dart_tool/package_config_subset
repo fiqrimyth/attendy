@@ -214,6 +214,10 @@ mime
 3.2
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/mime-2.0.0/
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/mime-2.0.0/lib/
+nested
+2.12
+file:///Users/mandirimco/.pub-cache/hosted/pub.dev/nested-1.0.0/
+file:///Users/mandirimco/.pub-cache/hosted/pub.dev/nested-1.0.0/lib/
 path
 3.0
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/path-1.9.0/
@@ -270,6 +274,10 @@ plugin_platform_interface
 3.0
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/plugin_platform_interface-2.1.8/
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/plugin_platform_interface-2.1.8/lib/
+provider
+2.12
+file:///Users/mandirimco/.pub-cache/hosted/pub.dev/provider-6.1.2/
+file:///Users/mandirimco/.pub-cache/hosted/pub.dev/provider-6.1.2/lib/
 shared_preferences
 3.4
 file:///Users/mandirimco/.pub-cache/hosted/pub.dev/shared_preferences-2.3.3/

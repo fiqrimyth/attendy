@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:attendy/screen/absence/absence_permit_screen.dart';
+import 'package:attendy/screen/dashboard/history/history_screen.dart';
 import 'package:attendy/screen/leave/leave_permit_screen.dart';
+import 'package:attendy/screen/overtime/overtime_permit_screen.dart';
+import 'package:attendy/screen/profile/edit_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +12,7 @@ import '../attendance/attendance_screen.dart';
 import '../camera/camera_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:attendy/screen/notification/notification_screen.dart';
 
 // import 'package:intl/date_symbol_data_local.dart';
 
@@ -431,21 +435,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Fungsi untuk memuat log absensi
   void _loadLogAbsensi() {
-    // Nanti ini bisa diubah untuk mengambil data dari API
     setState(() {
-      _logAbsensi = [
-        LogAbsensi(
-          type: 'Clock In',
-          timestamp: DateTime.now(),
-          status: 'Approved',
-        ),
-        LogAbsensi(
-          type: 'Izin',
-          timestamp: DateTime.now().subtract(const Duration(days: 1)),
-          status: 'Pending',
-        ),
-        // Tambahkan data dummy lainnya sesuai kebutuhan
-      ];
+      _logAbsensi = LogAbsensi.getDummyData();
     });
   }
 
@@ -551,9 +542,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Row(
                       children: [
-                        const CircleAvatar(
-                          radius: 20,
-                          backgroundImage: AssetImage('assets/profile.jpg'),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const EditProfileScreen(),
+                              ),
+                            );
+                          },
+                          child: const CircleAvatar(
+                            radius: 20,
+                            backgroundImage: AssetImage('assets/profile.jpg'),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Column(
@@ -577,7 +578,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
-                    const Icon(Icons.notifications_outlined, size: 24),
+                    IconButton(
+                      icon: SvgPicture.asset(
+                        'assets/icon/linear/notification.svg',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -750,7 +765,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HistoryScreen(),
+                          ),
+                        );
+                      },
                       child: const Text(
                         'Lihat Log',
                         style: TextStyle(
@@ -810,13 +832,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
             break;
           case 'Ajukan Lembur':
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) =>
-            //         const AjukanLemburScreen(), // Buat screen ini
-            //   ),
-            // );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    const OvertimePermitScreen(), // Buat screen ini
+              ),
+            );
             break;
           case 'Kalender':
             // Navigator.push(
