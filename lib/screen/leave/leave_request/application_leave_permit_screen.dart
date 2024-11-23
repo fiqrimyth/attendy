@@ -580,22 +580,26 @@ class _ApplicationLeavePermitScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
-        if (subtitle != null)
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF757575),
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
             ),
-          ),
+            if (subtitle != null)
+              Text(
+                ' $subtitle',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF757575),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 8),
         child,
         const SizedBox(height: 24),

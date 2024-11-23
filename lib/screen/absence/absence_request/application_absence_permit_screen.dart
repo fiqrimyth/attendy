@@ -1,3 +1,4 @@
+import 'package:attendy/service/permit_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,8 @@ class _ApplicationAbsencePermitScreenState
   final _formKey = GlobalKey<FormState>();
   final _reasonController = TextEditingController();
   final _picker = ImagePicker();
+  final PermitService _permitService = PermitService();
+  bool _isLoading = false;
 
   // Form state
   String? selectedCategoryId;
@@ -61,7 +64,8 @@ class _ApplicationAbsencePermitScreenState
   bool get isFormValid {
     return selectedCategoryId != null &&
         selectedDate != null &&
-        selectedDelegate != null;
+        selectedDelegate != null &&
+        _formKey.currentState?.validate() == true;
   }
 
   // MARK: - Date Formatting Methods
@@ -620,19 +624,60 @@ class _ApplicationAbsencePermitScreenState
   }
 
   // MARK: - Form Methods
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        // Proses pengiriman data ke server
-        // ...
+  Future<void> _submitPermit() async {
+    if (!_formKey.currentState!.validate()) return;
 
-        // Tampilkan dialog sukses
-        _showSuccessDialog();
-      } catch (e) {
+    try {
+      setState(() => _isLoading = true);
+
+      final data = {
+        'type': 'absence',
+        'category_id': selectedCategoryId,
+        'date': selectedDate != null
+            ? _formatServerDate(DateTime.parse(selectedDate!))
+            : '',
+        'delegate_id': selectedDelegate,
+        'description': _reasonController.text,
+        'attachment': fileBase64,
+        'filename': selectedFile,
+      };
+
+      final response = await _permitService.createPermit(data);
+
+      if (mounted) {
+        if (response.success == true) {
+          _showSuccessDialog();
+        } else {
+          String errorMessage = 'Terjadi kesalahan';
+
+          if (response.errors.isNotEmpty) {
+            // Mengambil semua pesan error dan menggabungkannya
+            errorMessage = response.errors.values
+                .expand((messages) => messages is List ? messages : [messages])
+                .join('\n');
+          } else if (response.message.isNotEmpty) {
+            errorMessage = response.message;
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -960,27 +1005,31 @@ class _ApplicationAbsencePermitScreenState
             child: SizedBox(
               width: double.infinity,
               height: 52,
-              child: ElevatedButton(
-                onPressed: isFormValid ? _submitForm : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFormValid
-                      ? const Color(0xFF2B67F6)
-                      : const Color(0xFFF8F7FB),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                  disabledBackgroundColor: const Color(0xFFF8F7FB),
-                ),
-                child: Text(
-                  'Kirim Approval',
-                  style: TextStyle(
-                    color: isFormValid ? Colors.white : const Color(0xFFBDBDBD),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: isFormValid ? _submitPermit : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isFormValid
+                            ? const Color(0xFF2B67F6)
+                            : const Color(0xFFF8F7FB),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        disabledBackgroundColor: const Color(0xFFF8F7FB),
+                      ),
+                      child: Text(
+                        'Kirim Approval',
+                        style: TextStyle(
+                          color: isFormValid
+                              ? Colors.white
+                              : const Color(0xFFBDBDBD),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
             ),
           ),
         ],

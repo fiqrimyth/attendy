@@ -1,11 +1,46 @@
 import 'package:attendy/model/permit_history.dart';
 import 'package:attendy/screen/leave/detail/leave_detail_permit_screen.dart';
 import 'package:attendy/screen/leave/leave_request/application_leave_permit_screen.dart';
+import 'package:attendy/service/permit_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class LeavePermitScreen extends StatelessWidget {
+class LeavePermitScreen extends StatefulWidget {
   const LeavePermitScreen({super.key});
+
+  @override
+  State<LeavePermitScreen> createState() => _LeavePermitScreenState();
+}
+
+class _LeavePermitScreenState extends State<LeavePermitScreen> {
+  final PermitService _permitService = PermitService();
+  bool _isLoading = true;
+  String? _error;
+  List<PermitHistory> _histories = [];
+  Map<String, dynamic> _summary = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() => _isLoading = true);
+      final response = await _permitService.getPermitHistory();
+      setState(() {
+        _histories = response.data;
+        _summary = response.summary;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   Widget _buildPermitCard(String title, String days) {
     return Container(
@@ -45,6 +80,7 @@ class LeavePermitScreen extends StatelessWidget {
     if (histories.isEmpty) {
       return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SvgPicture.asset(
               'assets/image/no-data2.svg',
@@ -122,7 +158,9 @@ class LeavePermitScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LeaveDetailPermitScreen(permit: history),
+                builder: (context) => LeaveDetailPermitScreen(
+                  permitData: history.toJson(),
+                ),
               ),
             );
           },
@@ -131,63 +169,8 @@ class LeavePermitScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(List<PermitHistory> histories) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            _buildPermitCard('Jatah Cuti', '10'),
-            _buildPermitCard('Absen', '2'),
-            _buildPermitCard('Alpha', '2'),
-            _buildPermitCard('Izin', '2'),
-            _buildPermitCard('Cuti', '2'),
-            _buildPermitCard('Lembur', '6'),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Riwayat Cuti',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        histories.isEmpty
-            ? Center(
-                child: Column(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/image/no-data2.svg',
-                      height: 200,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Belum ada data saat ini',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : _buildPermitHistory(histories),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final List<PermitHistory> histories =
-        PermitHistory.getDummyData(filterType: PermitType.leave);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -207,10 +190,52 @@ class LeavePermitScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: _buildContent(histories),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        children: [
+                          _buildPermitCard(
+                              'Jatah Cuti', '${_summary['jatahCuti'] ?? 0}'),
+                          _buildPermitCard(
+                              'Absen', '${_summary['absen'] ?? 0}'),
+                          _buildPermitCard(
+                              'Alpha', '${_summary['alpha'] ?? 0}'),
+                          _buildPermitCard('Izin', '${_summary['izin'] ?? 0}'),
+                          _buildPermitCard('Cuti', '${_summary['cuti'] ?? 0}'),
+                          _buildPermitCard(
+                              'Lembur', '${_summary['lembur'] ?? 0}'),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Riwayat Cuti',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_error != null || _histories.isEmpty)
+                        _buildPermitHistory([])
+                      else
+                        _buildPermitHistory(_histories),
+                    ],
+                  ),
+          ),
         ),
       ),
       floatingActionButton: ElevatedButton.icon(
@@ -223,7 +248,7 @@ class LeavePermitScreen extends StatelessWidget {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Ajukan Cuti'),
+        label: const Text('Buat Pengajuan'),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
           foregroundColor: Colors.white,
