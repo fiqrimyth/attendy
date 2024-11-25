@@ -76,14 +76,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   _buildFilterChip('All'),
-                  const SizedBox(width: 12),
-                  _buildFilterChip('Diajukan'),
-                  const SizedBox(width: 12),
-                  _buildFilterChip('Disetujui'),
-                  const SizedBox(width: 12),
-                  _buildFilterChip('Ditolak'),
+                  const SizedBox(width: -8),
+                  _buildFilterChip('Cuti'),
+                  const SizedBox(width: -8),
+                  _buildFilterChip('Izin Absen'),
+                  const SizedBox(width: -8),
+                  _buildFilterChip('Lembur'),
                 ],
               ),
             ),
@@ -120,28 +121,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildFilterChip(String label) {
-    bool isSelected = _selectedFilter == label;
-    return InkWell(
-      onTap: () {
+    final isSelected = _selectedFilter == label;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
         setState(() {
           _selectedFilter = label;
         });
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.grey[100],
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[600],
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+      selectedColor: Colors.blue,
+      backgroundColor: Colors.transparent,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.grey[700],
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
       ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isSelected
+            ? BorderSide(color: Colors.transparent)
+            : BorderSide.none,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
   }
 

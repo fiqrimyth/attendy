@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:attendy/model/menu_item_data.dart';
 import 'package:attendy/screen/absence/absence_permit_screen.dart';
+import 'package:attendy/screen/approval/approval_screen.dart';
 import 'package:attendy/screen/dashboard/history/history_screen.dart';
 import 'package:attendy/screen/leave/leave_permit_screen.dart';
 import 'package:attendy/screen/overtime/overtime_permit_screen.dart';
@@ -66,6 +68,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Tambahkan list untuk menyimpan log absensi
   List<LogAbsensi> _logAbsensi = [];
 
+  // Tambahkan variable untuk role
+  // String _userRole = ''; // Bisa diisi: 'staff', 'supervisor', 'manager', dll
+
+  // Tambahkan variable untuk jumlah notifikasi approval
+  int _approvalCount = 3; // Nanti bisa diupdate dari API
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +90,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Load log absensi
     _loadLogAbsensi();
+
+    // _getUserRole(); // Tambahkan ini
+
+    // Tambahkan ini untuk mendapatkan jumlah approval
+    _getApprovalCount();
   }
 
   @override
@@ -301,7 +314,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // Jika sudah dapat izin, ambil posisi
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0, // Atur sesuai kebutuhan
+        ),
       );
 
       if (mounted) {
@@ -385,10 +401,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       try {
         // Tambahkan timeout untuk mendapatkan posisi
         Position position = await Geolocator.getCurrentPosition(
-          // ignore: deprecated_member_use
-          desiredAccuracy: LocationAccuracy.high,
-          // ignore: deprecated_member_use
-          timeLimit: const Duration(seconds: 5),
+          locationSettings: LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0, // Atur sesuai kebutuhan
+          ),
         ).timeout(
           const Duration(seconds: 10),
           onTimeout: () {
@@ -525,283 +541,384 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Fungsi untuk mendapatkan role user
+  // Future<void> _getUserRole() async {
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   setState(() {
+  //     _userRole = prefs.getString('userRole') ?? 'staff';
+  //   });
+  // }
+
+  List<MenuItemData> _getAllMenus() {
+    return [
+      MenuItemData(
+        icon: 'assets/icon/linear/stetoscop_blue.svg',
+        label: 'Izin Absen',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AbsencePermitScreen()),
+        ),
+      ),
+      MenuItemData(
+        icon: 'assets/icon/linear/calendar_blue.svg',
+        label: 'Ajukan Cuti',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LeavePermitScreen()),
+        ),
+      ),
+      MenuItemData(
+        icon: 'assets/icon/linear/history_blue.svg',
+        label: 'Ajukan Lembur',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OvertimePermitScreen()),
+        ),
+      ),
+      MenuItemData(
+        icon: 'assets/icon/linear/calendar_2_blue.svg',
+        label: 'Kalender',
+        onTap: () {}, // Implementasi kalender
+      ),
+      MenuItemData(
+        icon: 'assets/icon/linear/tick-circle_blue.svg',
+        label: 'Approval',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ApprovalScreen()),
+        ), // Implementasi approval screen
+        badge: _approvalCount, // Tambahkan badge count
+      ),
+    ];
+  }
+
+  // Fungsi untuk mendapatkan menu berdasarkan role
+  // List<MenuItemData> _getMenuByRole() {
+  //   if (_userRole == 'staff') {
+  //     return [
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/stetoscop_blue.svg',
+  //         label: 'Izin Absen',
+  //         onTap: () => Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //               builder: (context) => const AbsencePermitScreen()),
+  //         ),
+  //       ),
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/calendar_blue.svg',
+  //         label: 'Ajukan Cuti',
+  //         onTap: () => Navigator.push(
+  //           context,
+  //           MaterialPageRoute(builder: (context) => const LeavePermitScreen()),
+  //         ),
+  //       ),
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/history_blue.svg',
+  //         label: 'Ajukan Lembur',
+  //         onTap: () => Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //               builder: (context) => const OvertimePermitScreen()),
+  //         ),
+  //       ),
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/calendar_2_blue.svg',
+  //         label: 'Kalender',
+  //         onTap: () {}, // Implementasi kalender
+  //       ),
+  //     ];
+  //   } else {
+  //     // Menu untuk supervisor/manager
+  //     return [
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/clock.svg',
+  //         label: 'Approval',
+  //         onTap: () {}, // Implementasi approval screen
+  //       ),
+  //       MenuItemData(
+  //         icon: 'assets/icon/linear/document.svg',
+  //         label: 'Report',
+  //         onTap: () {}, // Implementasi report screen
+  //       ),
+  //     ];
+  //   }
+  // }
+
+  // Fungsi untuk mendapatkan jumlah approval yang pending
+  Future<void> _getApprovalCount() async {
+    // Nanti bisa diganti dengan call API
+    setState(() {
+      _approvalCount = 3; // Contoh data statis
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header dengan profil
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const EditProfileScreen(),
-                              ),
-                            );
-                          },
-                          child: const CircleAvatar(
-                            radius: 20,
-                            backgroundImage: AssetImage('assets/profile.jpg'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Jhon Doe',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header dengan profil
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const EditProfileScreen(),
+                                ),
+                              );
+                            },
+                            child: const CircleAvatar(
+                              radius: 20,
+                              backgroundImage: AssetImage('assets/profile.jpg'),
                             ),
-                            Text(
-                              'Cook Helper',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: SvgPicture.asset(
-                        'assets/icon/linear/notification.svg',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationScreen(),
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Update bagian jam dan tanggal
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _timeString,
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 2,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _dateString,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        // Shift Info
-                        const SizedBox(height: 20),
-                        const Divider(),
-                        const SizedBox(height: 20),
-                        Text(
-                          _shiftName,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _shiftTime,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        // Clock In/Out Buttons
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: isClockIn ? null : _handleClockIn,
-                                icon: const Icon(Icons.access_time),
-                                label: const Text('Clock In'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      isClockIn ? Colors.grey : Colors.blue,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  disabledBackgroundColor: Colors.grey,
-                                  disabledForegroundColor: Colors.white,
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Jhon Doe',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: !isClockIn ? null : _handleClockOut,
-                                icon: const Icon(Icons.access_time),
-                                label: const Text('Clock Out'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      !isClockIn ? Colors.grey : Colors.blue,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  disabledBackgroundColor: Colors.grey,
-                                  disabledForegroundColor: Colors.white,
+                              Text(
+                                'Cook Helper',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
                                 ),
                               ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: SvgPicture.asset(
+                          'assets/icon/linear/notification.svg',
+                          width: 24,
+                          height: 24,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationScreen(),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Foto selfie diperlukan untuk Clock In/Clock Out',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Menu
-                const SizedBox(height: 32),
-                const Text(
-                  'Menu',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: <Widget>[
-                    _buildMenuButton(
-                        SvgPicture.asset(
-                          'assets/icon/linear/stetoscop_blue.svg',
-                          width: 24,
-                          height: 24,
-                        ),
-                        'Izin Absen'),
-                    _buildMenuButton(
-                        SvgPicture.asset(
-                          'assets/icon/linear/calendar_blue.svg', // sesuaikan dengan path icon calendar Anda
-                          width: 24,
-                          height: 24,
-                        ),
-                        'Ajukan Cuti'),
-                    _buildMenuButton(
-                        SvgPicture.asset(
-                          'assets/icon/linear/history_blue.svg', // sesuaikan dengan path icon timer Anda
-                          width: 24,
-                          height: 24,
-                        ),
-                        'Ajukan Lembur'),
-                    _buildMenuButton(
-                        SvgPicture.asset(
-                          'assets/icon/linear/calendar_2_blue.svg', // sesuaikan dengan path icon kalender Anda
-                          width: 24,
-                          height: 24,
-                        ),
-                        'Kalender'),
-                  ],
-                ),
-
-                // Log Absensi
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Log Absensi',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                          );
+                        },
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HistoryScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Lihat Log',
-                        style: TextStyle(
-                          color: Color(0xFF2962FF),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Ganti bagian empty state dengan ini
-                if (_logAbsensi.isEmpty) ...[
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Update bagian jam dan tanggal
                   Center(
-                    child: Column(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/image/no-data2.svg',
-                          height: 200,
-                        ),
-                        const Text('Belum ada data saat ini'),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            _timeString,
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _dateString,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+
+                          // Shift Info
+                          const SizedBox(height: 20),
+                          const Divider(),
+                          const SizedBox(height: 20),
+                          Text(
+                            _shiftName,
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _shiftTime,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+
+                          // Clock In/Out Buttons
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: isClockIn ? null : _handleClockIn,
+                                  icon: const Icon(Icons.access_time),
+                                  label: const Text('Clock In'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isClockIn ? Colors.grey : Colors.blue,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    disabledBackgroundColor: Colors.grey,
+                                    disabledForegroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed:
+                                      !isClockIn ? null : _handleClockOut,
+                                  icon: const Icon(Icons.access_time),
+                                  label: const Text('Clock Out'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        !isClockIn ? Colors.grey : Colors.blue,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    disabledBackgroundColor: Colors.grey,
+                                    disabledForegroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Foto selfie diperlukan untuk Clock In/Clock Out',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ] else ...[
-                  Column(
-                    children:
-                        _logAbsensi.map((log) => _buildLogItem(log)).toList(),
+
+                  // Menu
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Menu',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ]
-              ],
+                  const SizedBox(height: 16),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 4,
+                    children: _getAllMenus()
+                        .map((menu) => _buildMenuButton(
+                              SvgPicture.asset(
+                                menu.icon,
+                                width: 24,
+                                height: 24,
+                              ),
+                              menu.label,
+                              onTap: menu.onTap,
+                              badge: menu.badge,
+                            ))
+                        .toList(),
+                  ),
+
+                  // Log Absensi
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Log Absensi',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HistoryScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Lihat Log',
+                          style: TextStyle(
+                            color: Color(0xFF2962FF),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Ganti bagian empty state dengan ini
+                  if (_logAbsensi.isEmpty) ...[
+                    Center(
+                      child: Column(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/image/no-data2.svg',
+                            height: 200,
+                          ),
+                          const Text('Belum ada data saat ini'),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    Column(
+                      children:
+                          _logAbsensi.map((log) => _buildLogItem(log)).toList(),
+                    ),
+                  ]
+                ],
+              ),
             ),
           ),
         ),
@@ -809,50 +926,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildMenuButton(Widget icon, String label) {
+  // Update widget _buildMenuButton
+  Widget _buildMenuButton(Widget icon, String label,
+      {VoidCallback? onTap, int? badge}) {
     return InkWell(
-      onTap: () {
-        switch (label) {
-          case 'Izin Absen':
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const AbsencePermitScreen(), // Buat screen ini
-              ),
-            );
-            break;
-          case 'Ajukan Cuti':
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const LeavePermitScreen(), // Buat screen ini
-              ),
-            );
-            break;
-          case 'Ajukan Lembur':
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const OvertimePermitScreen(), // Buat screen ini
-              ),
-            );
-            break;
-          case 'Kalender':
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => const KalenderScreen(), // Buat screen ini
-            //   ),
-            // );
-            break;
-        }
-      },
+      onTap: onTap,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          icon,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              icon,
+              if (badge != null && badge > 0)
+                Positioned(
+                  right: -8,
+                  top: -8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 20,
+                      minHeight: 20,
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : badge.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Text(
             label,
@@ -862,5 +974,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  // Tambahkan fungsi untuk refresh data
+  Future<void> _refreshData() async {
+    // Panggil fungsi yang memuat data dari server
+    // await _loadAttendanceState();
+    // await _getShiftInfo();
+    // await _getCurrentLocation();
+    // await _loadLogAbsensi();
+    // await _getApprovalCount();
   }
 }
