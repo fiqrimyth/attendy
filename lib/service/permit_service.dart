@@ -6,7 +6,7 @@ class PermitService {
 
   Future<PermitResponse> getPermitHistory() async {
     try {
-      final response = await dio.get('YOUR_API_ENDPOINT/permits');
+      final response = await dio.get('localhost:3000/api/permits');
       return PermitResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Gagal mengambil data izin');
@@ -15,7 +15,7 @@ class PermitService {
 
   Future<PermitResponse> createPermit(Map<String, dynamic> data) async {
     try {
-      final response = await dio.post('YOUR_API_ENDPOINT/permits', data: data);
+      final response = await dio.post('localhost:3000/api/permits', data: data);
       return PermitResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Gagal membuat izin');
@@ -24,7 +24,7 @@ class PermitService {
 
   Future<PermitResponse> getPermitDetail(String id) async {
     try {
-      final response = await dio.get('YOUR_API_ENDPOINT/permits/$id');
+      final response = await dio.get('localhost:3000/api/permits/$id');
       return PermitResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Gagal mengambil detail izin');

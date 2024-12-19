@@ -1,6 +1,6 @@
-import 'package:attendy/screen/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnBoardingScreen extends StatelessWidget {
   const OnBoardingScreen({super.key});
@@ -62,12 +62,37 @@ class OnBoardingScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const DashboardScreen(),
-                          ),
-                        );
+                      onPressed: () async {
+                        // Simpan status bahwa onboarding sudah dilihat
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('showOnboarding', false);
+
+                        // Cek token dan expired time
+                        final token = prefs.getString('token');
+                        final tokenExpiredTime =
+                            prefs.getString('tokenExpiredTime');
+
+                        if (context.mounted) {
+                          if (token != null && tokenExpiredTime != null) {
+                            final expiredDateTime =
+                                DateTime.parse(tokenExpiredTime);
+                            final now = DateTime.now();
+
+                            if (now.isBefore(expiredDateTime)) {
+                              // Token masih valid, langsung ke dashboard
+                              Navigator.pushReplacementNamed(
+                                  context, '/dashboard');
+                            } else {
+                              // Token expired, hapus data login dan ke halaman login
+                              await prefs.remove('token');
+                              await prefs.remove('tokenExpiredTime');
+                              Navigator.pushReplacementNamed(context, '/login');
+                            }
+                          } else {
+                            // Belum login, arahkan ke halaman login
+                            Navigator.pushReplacementNamed(context, '/login');
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2F80ED),

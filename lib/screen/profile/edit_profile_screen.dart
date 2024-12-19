@@ -1,7 +1,10 @@
+import 'package:attendy/config/api_config.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
+import 'package:attendy/service/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -24,7 +27,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // Tambahkan variable untuk image dan file
   File? _profileImage;
-  List<File> _supportingFiles = [];
+  final List<File> _supportingFiles = [];
+
+  final Dio _dio = Dio();
+  bool _isLoading = true;
 
   // Method untuk handle image picker
   Future<void> _pickImage() async {
@@ -136,12 +142,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'nip': _nipController.text,
       };
 
-      // TODO: Implementasi pengiriman data ke backend
-
-      // Remove loading indicator
+      // Close screen
       Navigator.pop(context);
 
-      // Close screen
       Navigator.pop(context);
 
       // Show success message
@@ -162,17 +165,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Isi dengan data dummy
-    _namaController.text = 'Jhon Doe';
-    _pekerjaanController.text = 'Cook Helper';
-    _jenisKelaminController.text = 'Laki - Laki';
-    _tanggalLahirController.text = '05 Desember 1994';
-    _alamatController.text =
-        'Jl. Baskerville No.21, RT001/RW007, Kotabaru, Karawang';
-    _emailController.text = 'jhon.doe@sejiwa.com';
-    _telpController.text = '081278785656';
-    _ktpController.text = '3215251902950001';
-    _nipController.text = '199502192021021145';
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() => _isLoading = true);
+      final token = await AuthService.instance.getToken();
+      final user = await AuthService.instance.getUser();
+      final userId = user?.userId ?? '';
+
+      if (token == null) throw Exception('Token tidak ditemukan');
+      if (userId.isEmpty) throw Exception('ID Pengguna tidak ditemukan');
+
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}/api/profile/$userId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final profileData = response.data['datas'][0];
+        // Download foto dan simpan sebagai file temporary
+        if (profileData['photo'] != null &&
+            profileData['photo'] != 'default-avatar.png') {
+          final response = await _dio.get(
+            profileData['photo'],
+            options: Options(responseType: ResponseType.bytes),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp();
+          final tempFile = File('${tempDir.path}/profile_photo.jpg');
+          await tempFile.writeAsBytes(response.data);
+
+          setState(() {
+            _profileImage = tempFile;
+          });
+        }
+
+        setState(() {
+          _namaController.text = profileData['fullName'] ?? '';
+          _pekerjaanController.text = profileData['jobType'] ?? '';
+          _emailController.text = profileData['email'] ?? '';
+          // Set controller lainnya sesuai dengan data yang tersedia
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data profil: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -199,77 +251,80 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           onPressed: _saveData, // Update this to save data
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Profile Image Section dengan ukuran yang lebih kecil
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage: _profileImage != null
-                        ? FileImage(_profileImage!)
-                        : const AssetImage('assets/profile.jpg')
-                            as ImageProvider,
-                    child: InkWell(
-                      onTap: _pickImage,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[600],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 16, // Ukuran icon dikecilkan
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Form Fields dengan padding yang disesuaikan
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildTextField('Nama', _namaController),
-                  _buildTextField('Pekerjaan', _pekerjaanController),
-                  _buildTextField('Jenis Kelamin', _jenisKelaminController),
-                  _buildTextField(
-                    'Tanggal Lahir',
-                    _tanggalLahirController,
-                    suffix: Icon(
-                      Icons.calendar_today,
-                      size: 20,
-                      color: Colors.grey[600],
+                  const SizedBox(height: 20),
+                  // Profile Image Section dengan ukuran yang lebih kecil
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundImage: _profileImage != null
+                              ? FileImage(_profileImage!)
+                              : const AssetImage('assets/profile.jpg')
+                                  as ImageProvider,
+                          child: InkWell(
+                            onTap: _pickImage,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[600],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                              size: 16, // Ukuran icon dikecilkan
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  _buildTextField('Alamat Domisili', _alamatController,
-                      maxLines: 2),
-                  _buildTextField('Email', _emailController),
-                  _buildTextField('Nomor Telepon', _telpController),
-                  _buildTextField('Nomor KTP', _ktpController),
-                  _buildTextField('Nomor Induk Pegawai', _nipController),
-                  const SizedBox(height: 20),
-                  _buildFilePendukungSection(),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
+                  // Form Fields dengan padding yang disesuaikan
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildTextField('Nama', _namaController),
+                        _buildTextField('Pekerjaan', _pekerjaanController),
+                        _buildTextField(
+                            'Jenis Kelamin', _jenisKelaminController),
+                        _buildTextField(
+                          'Tanggal Lahir',
+                          _tanggalLahirController,
+                          suffix: Icon(
+                            Icons.calendar_today,
+                            size: 20,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        _buildTextField('Alamat Domisili', _alamatController,
+                            maxLines: 2),
+                        _buildTextField('Email', _emailController),
+                        _buildTextField('Nomor Telepon', _telpController),
+                        _buildTextField('Nomor KTP', _ktpController),
+                        _buildTextField('Nomor Induk Pegawai', _nipController),
+                        const SizedBox(height: 20),
+                        _buildFilePendukungSection(),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -301,6 +356,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(vertical: 8),
             suffixIcon: suffix,
+            hintText: 'Masukkan $label',
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
             border: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.grey),
             ),

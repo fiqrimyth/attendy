@@ -6,6 +6,7 @@ import 'package:attendy/screen/dashboard/history/history_screen.dart';
 import 'package:attendy/screen/leave/leave_permit_screen.dart';
 import 'package:attendy/screen/overtime/overtime_permit_screen.dart';
 import 'package:attendy/screen/profile/edit_profile_screen.dart';
+import 'package:attendy/service/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -15,8 +16,7 @@ import '../camera/camera_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:attendy/screen/notification/notification_screen.dart';
-
-// import 'package:intl/date_symbol_data_local.dart';
+import 'package:attendy/service/datetime_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,11 +29,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _timeString = '';
   String _dateString = '';
   Timer? _timer;
+  final _dateTimeService = DateTimeService.instance;
+
+  // Tambah state untuk user info
+  String _userName = '';
+  String _userJob = '';
+  String _userPhoto = '';
 
   // Tambah state untuk shift info
   String _shiftName = '';
   String _shiftTime = '';
-  // bool _isLoadingShift = true;
 
   // Tambahkan state untuk mengontrol button
   bool isClockIn = false;
@@ -43,27 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Tambahkan variable untuk lokasi
   bool _isLocationFound = false;
   Position? _currentPosition;
-
-  // Model untuk data attendance (bisa dipindah ke file terpisah)
-  /*
-  class AttendanceData {
-    final DateTime timestamp;
-    final String location;
-    final String type; // 'in' atau 'out'
-
-    AttendanceData({
-      required this.timestamp,
-      required this.location,
-      required this.type,
-    });
-
-    Map<String, dynamic> toJson() => {
-      'timestamp': timestamp.toIso8601String(),
-      'location': location,
-      'type': type,
-    };
-  }
-  */
 
   // Tambahkan list untuk menyimpan log absensi
   List<LogAbsensi> _logAbsensi = [];
@@ -81,80 +65,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _timer =
         Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
 
-    // Sementara gunakan data dummy
-    _getShiftInfo();
-    _loadAttendanceState();
-
-    // Tambahkan ini
+    // Load user data
+    _loadUserData();
     _getCurrentLocation();
-
-    // Load log absensi
-    _loadLogAbsensi();
-
-    // _getUserRole(); // Tambahkan ini
-
-    // Tambahkan ini untuk mendapatkan jumlah approval
+    _loadAttendanceState();
     _getApprovalCount();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _dateTimeService.dispose();
     super.dispose();
   }
 
-  void _getTime() {
-    final DateTime now = DateTime.now();
-    final String formattedTime = DateFormat('HH:mm:ss').format(now);
-    final String formattedDate =
-        DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(now);
+  void _getTime() async {
+    try {
+      final DateTime now = await _dateTimeService.getServerDateTime();
+      debugPrint('=== DateTime Debug ===');
+      debugPrint('Raw server datetime: ${now.toIso8601String()}');
 
-    if (mounted) {
-      setState(() {
-        _timeString = formattedTime;
-        _dateString = formattedDate;
-      });
+      final String formattedTime = DateFormat('HH:mm:ss').format(now);
+      final String formattedDate =
+          DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(now);
+      debugPrint('Formatted time: $formattedTime');
+      debugPrint('Formatted date: $formattedDate');
+      debugPrint('===================');
+
+      if (mounted) {
+        setState(() {
+          _timeString = formattedTime;
+          _dateString = formattedDate;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting server time: $e');
+      debugPrint('Stack trace: ${e is Error ? e.stackTrace : ''}');
+      // Fallback ke waktu device jika gagal
+      final DateTime now = DateTime.now();
+      debugPrint('Fallback to device time: ${now.toIso8601String()}');
+
+      if (mounted) {
+        setState(() {
+          _timeString = DateFormat('HH:mm:ss').format(now);
+          _dateString = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(now);
+        });
+      }
     }
   }
 
-  // Fungsi untuk mendapatkan info shift dari server
-  // void _getShiftInfo() async {
-  //   try {
-  //     setState(() => _isLoadingShift = true);
-  //
-  //     final response = await apiService.getEmployeeShift();
-  //     if (response.success) {
-  //       setState(() {
-  //         _shiftName = response.shiftName; // contoh: "Shift 1"
-  //         _shiftTime = response.shiftTime; // contoh: "07:30 - 14:30"
-  //       });
-  //     } else {
-  //       // Handle error - tampilkan pesan error atau set default value
-  //       _setDefaultShiftInfo();
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error getting shift info: $e');
-  //     _setDefaultShiftInfo();
-  //   } finally {
-  //     setState(() => _isLoadingShift = false);
-  //   }
-  // }
+  // Fungsi untuk load user data
+  Future<void> _loadUserData() async {
+    try {
+      final user = await AuthService.instance.getUser();
+      if (user != null) {
+        setState(() {
+          _userName = user.fullName;
+          _userJob = user.jobType;
+          _userPhoto = user.photo;
 
-  // Sementara gunakan data dummy
-  void _getShiftInfo() {
-    setState(() {
-      _shiftName = 'Shift 1';
-      _shiftTime = '07:30 - 14:30';
-      // _isLoadingShift = false;
-    });
+          // Perbaiki bagian ini
+          _shiftName = user
+              .shiftSchedule.shifts[user.shiftSchedule.assignedShift - 1].name;
+          _shiftTime =
+              '${user.shiftSchedule.currentShift.startTime} - ${user.shiftSchedule.currentShift.endTime}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
   }
-
-  // void _setDefaultShiftInfo() {
-  //   setState(() {
-  //     _shiftName = 'Tidak ada shift';
-  //     _shiftTime = '-';
-  //   });
-  // }
 
   // Function untuk handle clock in/out
   Future<void> _handleClockIn() async {
@@ -449,13 +429,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Fungsi untuk memuat log absensi
-  void _loadLogAbsensi() {
-    setState(() {
-      _logAbsensi = LogAbsensi.getDummyData();
-    });
-  }
-
   // Fungsi untuk membangun item log absensi
   Widget _buildLogItem(LogAbsensi log) {
     Color statusColor;
@@ -682,24 +655,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               );
                             },
-                            child: const CircleAvatar(
+                            child: CircleAvatar(
                               radius: 20,
-                              backgroundImage: AssetImage('assets/profile.jpg'),
+                              backgroundImage: _userPhoto.isNotEmpty
+                                  ? NetworkImage(_userPhoto) as ImageProvider
+                                  : const AssetImage('assets/profile.jpg'),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Jhon Doe',
-                                style: TextStyle(
+                              Text(
+                                _userName,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               Text(
-                                'Cook Helper',
+                                _userJob,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[600],
@@ -976,13 +951,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Tambahkan fungsi untuk refresh data
+  // Update fungsi refresh data
   Future<void> _refreshData() async {
-    // Panggil fungsi yang memuat data dari server
-    // await _loadAttendanceState();
-    // await _getShiftInfo();
-    // await _getCurrentLocation();
-    // await _loadLogAbsensi();
-    // await _getApprovalCount();
+    await _loadUserData();
+    await _loadAttendanceState();
+    await _getCurrentLocation();
+    await _getApprovalCount();
   }
 }

@@ -1,0 +1,1 @@
+ /Users/mandirimco/Development/Code/FlutterProjects/attendy/.dart_tool/flutter_build/197777b0966f3093b0225ccd8fb45e0d/native_assets.yaml: 

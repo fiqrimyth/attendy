@@ -2,25 +2,35 @@ import 'package:attendy/provider/attendance_provider.dart';
 import 'package:attendy/screen/attendance/attendance_screen.dart';
 import 'package:attendy/screen/camera/camera_screen.dart';
 import 'package:attendy/screen/dashboard/dashboard_screen.dart';
+import 'package:attendy/screen/login/login_screen.dart';
 import 'package:attendy/screen/onboarding/on_boarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Cek apakah onboarding sudah pernah dilihat
+  final prefs = await SharedPreferences.getInstance();
+  final showOnboarding = prefs.getBool('showOnboarding') ?? true;
+
   initializeDateFormatting('id_ID', null).then((_) => runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => AttendanceProvider()),
             // ... provider lainnya ...
           ],
-          child: const MyApp(),
+          child: MyApp(showOnboarding: showOnboarding),
         ),
       ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool showOnboarding;
+
+  const MyApp({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +56,10 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: false,
       ),
-      initialRoute: '/onboarding',
+      initialRoute: showOnboarding ? '/onboarding' : '/login',
       routes: {
         '/onboarding': (context) => const OnBoardingScreen(),
+        '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/camera': (context) => const CameraScreen(
               type: '',

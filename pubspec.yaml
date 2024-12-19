@@ -22,6 +22,9 @@ dependencies:
   app_settings: ^5.0.0
   file_picker: ^8.1.4
   provider: ^6.0.0
+  device_info_plus: ^9.1.2
+  logger: ^2.0.2
+  http: ^0.13.5
 
 dev_dependencies:
   flutter_test:

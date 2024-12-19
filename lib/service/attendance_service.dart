@@ -2,7 +2,7 @@ import 'package:attendy/model/log_absensi.dart';
 import 'package:dio/dio.dart';
 
 class AttendanceService {
-  final String baseUrl = 'https://api-example.com';
+  final String baseUrl = 'localhost:3000/api';
   final dio = Dio(); // Menggunakan package dio untuk HTTP request
 
   Future<List<LogAbsensi>> getAttendanceHistory() async {
