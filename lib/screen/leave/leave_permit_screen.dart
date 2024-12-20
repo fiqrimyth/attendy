@@ -4,6 +4,8 @@ import 'package:attendy/screen/leave/leave_request/application_leave_permit_scre
 import 'package:attendy/service/permit_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:attendy/model/permit_type.dart';
+import 'package:attendy/service/auth_service.dart';
 
 class LeavePermitScreen extends StatefulWidget {
   const LeavePermitScreen({super.key});
@@ -17,21 +19,48 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
   bool _isLoading = true;
   String? _error;
   List<PermitHistory> _histories = [];
-  Map<String, dynamic> _summary = {};
+  List<PermitType> _permitTypes = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadPermitTypes();
   }
 
-  Future<void> _loadData() async {
+  // Future<void> _loadData() async {
+  //   try {
+  //     setState(() => _isLoading = true);
+  //     final response = await _permitService.getPermitHistory();
+  //     setState(() {
+  //       _histories = response.data;
+  //       _summary = response.summary;
+  //       _isLoading = false;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       _error = e.toString();
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
+
+  Future<void> _loadPermitTypes() async {
     try {
-      setState(() => _isLoading = true);
-      final response = await _permitService.getPermitHistory();
       setState(() {
-        _histories = response.data;
-        _summary = response.summary;
+        _isLoading = true;
+        _error = null;
+      });
+
+      final user = await AuthService.instance.getUser();
+
+      if (user?.userId == null) throw Exception('User ID tidak ditemukan');
+
+      final types = await _permitService.getPermitTypes(user!.userId);
+      final histories = await _permitService.getPermitHistory(user.userId);
+
+      setState(() {
+        _permitTypes = types;
+        _histories = histories;
         _isLoading = false;
       });
     } catch (e) {
@@ -39,6 +68,12 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
         _error = e.toString();
         _isLoading = false;
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data: $e')),
+        );
+      }
     }
   }
 
@@ -48,6 +83,13 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFEEF3FF),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -119,7 +161,7 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
               SizedBox(
                 width: 120,
                 child: Text(
-                  history.date,
+                  history.createdAt.toString(),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black54,
@@ -131,7 +173,7 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.type,
+                      history.leaveCategory ?? '',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -139,7 +181,7 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
                       ),
                     ),
                     Text(
-                      history.description,
+                      history.leaveReason ?? '',
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.black45,
@@ -191,50 +233,61 @@ class _LeavePermitScreenState extends State<LeavePermitScreen> {
         centerTitle: true,
       ),
       body: RefreshIndicator(
-        onRefresh: _loadData,
+        onRefresh: _loadPermitTypes,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        children: [
-                          _buildPermitCard(
-                              'Jatah Cuti', '${_summary['jatahCuti'] ?? 0}'),
-                          _buildPermitCard(
-                              'Absen', '${_summary['absen'] ?? 0}'),
-                          _buildPermitCard(
-                              'Alpha', '${_summary['alpha'] ?? 0}'),
-                          _buildPermitCard('Izin', '${_summary['izin'] ?? 0}'),
-                          _buildPermitCard('Cuti', '${_summary['cuti'] ?? 0}'),
-                          _buildPermitCard(
-                              'Lembur', '${_summary['lembur'] ?? 0}'),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Riwayat Cuti',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (_error != null)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Error: $_error'),
+                        ElevatedButton(
+                          onPressed: _loadPermitTypes,
+                          child: const Text('Coba Lagi'),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_error != null || _histories.isEmpty)
-                        _buildPermitHistory([])
-                      else
-                        _buildPermitHistory(_histories),
-                    ],
+                      ],
+                    ),
+                  )
+                else if (_permitTypes.isEmpty)
+                  const Center(child: Text('Tidak ada data'))
+                else
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    children: _permitTypes.map((type) {
+                      print('Building card for: ${type.description}');
+                      return _buildPermitCard(
+                        type.description,
+                        type.daysAllowed.toString(),
+                      );
+                    }).toList(),
                   ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Riwayat Izin',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_error != null || _histories.isEmpty)
+                  _buildPermitHistory([])
+                else
+                  _buildPermitHistory(_histories),
+              ],
+            ),
           ),
         ),
       ),

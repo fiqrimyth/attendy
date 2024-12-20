@@ -1,4 +1,4 @@
-#Thu Dec 19 17:03:14 WIB 2024
+#Fri Dec 20 16:42:45 WIB 2024
 base.0=/Users/mandirimco/Development/Code/FlutterProjects/attendy/build/app/intermediates/dex/debug/mergeExtDexDebug/classes.dex
 base.1=/Users/mandirimco/Development/Code/FlutterProjects/attendy/build/app/intermediates/dex/debug/mergeLibDexDebug/1/classes.dex
 base.10=/Users/mandirimco/Development/Code/FlutterProjects/attendy/build/app/intermediates/dex/debug/mergeLibDexDebug/9/classes.dex

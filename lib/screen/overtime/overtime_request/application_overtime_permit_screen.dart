@@ -510,14 +510,14 @@ class _ApplicationOvertimePermitScreenState
               ),
               headerForegroundColor: Colors.black,
               surfaceTintColor: Colors.white,
-              dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).primaryColor;
                 }
                 return null;
               }),
-              todayBackgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).primaryColor;
                 }
                 return Colors.transparent;
@@ -587,14 +587,14 @@ class _ApplicationOvertimePermitScreenState
               ),
               headerForegroundColor: Colors.black,
               surfaceTintColor: Colors.white,
-              dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).primaryColor;
                 }
                 return null;
               }),
-              todayBackgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).primaryColor;
                 }
                 return Colors.transparent;

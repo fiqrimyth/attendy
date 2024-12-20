@@ -1,142 +1,104 @@
 class LogAbsensi {
-  final String id;
+  final String userId;
+  final DateTime time;
   final String type;
-  final DateTime timestamp;
+  final String date;
   final String status;
-  final String? description;
-  final String? attachment;
-  final String employeeId;
-  final String employeeName;
-  final String department;
-  final String position;
-  final DateTime startDate;
-  final DateTime endDate;
-  final String reason;
-  final String month;
+  final Shift shift;
+  final Location location;
+  final String? photo;
 
   LogAbsensi({
-    required this.id,
+    required this.userId,
+    required this.time,
     required this.type,
-    required this.timestamp,
+    required this.date,
     required this.status,
-    required this.employeeId,
-    required this.employeeName,
-    required this.department,
-    required this.position,
-    required this.startDate,
-    required this.endDate,
-    this.description,
-    this.attachment,
-    required this.reason,
-    required this.month,
+    required this.shift,
+    required this.location,
+    this.photo,
   });
 
   factory LogAbsensi.fromJson(Map<String, dynamic> json) {
     return LogAbsensi(
-      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
+      time:
+          json['time'] != null ? DateTime.parse(json['time']) : DateTime.now(),
       type: json['type'] ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
-          : DateTime.now(),
+      date: json['date'] ?? '',
       status: json['status'] ?? '',
-      description: json['description'],
-      attachment: json['attachment'],
-      employeeId: json['employeeId'] ?? '',
-      employeeName: json['employeeName'] ?? '',
-      department: json['department'] ?? '',
-      position: json['position'] ?? '',
-      startDate: json['startDate'] != null
-          ? DateTime.parse(json['startDate'])
-          : DateTime.now(),
-      endDate: json['endDate'] != null
-          ? DateTime.parse(json['endDate'])
-          : DateTime.now(),
-      reason: json['reason'] ?? '',
-      month: json['month'] ?? '',
+      shift: json['shift'] != null
+          ? Shift.fromJson(json['shift'])
+          : Shift(name: '', startTime: '', endTime: ''),
+      location: json['location'] != null
+          ? Location.fromJson(json['location'])
+          : Location(type: 'Point', coordinates: [0, 0]),
+      photo: json['photo'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'userId': userId,
+      'time': time.toIso8601String(),
       'type': type,
-      'timestamp': timestamp.toIso8601String(),
+      'date': date,
       'status': status,
-      'description': description,
-      'attachment': attachment,
-      'employeeId': employeeId,
-      'employeeName': employeeName,
-      'department': department,
-      'position': position,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
-      'reason': reason,
-      'month': month,
+      'shift': shift.toJson(),
+      'location': location.toJson(),
+      'photo': photo,
     };
   }
+}
 
-  static List<LogAbsensi> getDummyData() {
-    return [
-      LogAbsensi(
-        id: 'A001',
-        type: 'Clock In',
-        timestamp: DateTime(2024, 4, 22, 7, 30),
-        status: 'Approved',
-        employeeId: 'EMP001',
-        employeeName: 'John Doe',
-        department: 'IT',
-        position: 'Software Engineer',
-        startDate: DateTime(2024, 4, 22, 7, 30),
-        endDate: DateTime(2024, 4, 22, 7, 30),
-        description: 'Absensi masuk tepat waktu',
-        reason: 'Regular attendance',
-        month: 'April',
-      ),
-      LogAbsensi(
-        id: 'A002',
-        type: 'Clock Out',
-        timestamp: DateTime(2024, 4, 22, 16, 30),
-        status: 'Approved',
-        employeeId: 'EMP001',
-        employeeName: 'John Doe',
-        department: 'IT',
-        position: 'Software Engineer',
-        startDate: DateTime(2024, 4, 22, 16, 30),
-        endDate: DateTime(2024, 4, 22, 16, 30),
-        description: 'Absensi pulang tepat waktu',
-        reason: 'End of working hours',
-        month: 'April',
-      ),
-      LogAbsensi(
-        id: 'M001',
-        type: 'Clock In',
-        timestamp: DateTime(2024, 3, 22, 7, 30),
-        status: 'Approved',
-        employeeId: 'EMP001',
-        employeeName: 'John Doe',
-        department: 'IT',
-        position: 'Software Engineer',
-        startDate: DateTime(2024, 3, 22, 7, 30),
-        endDate: DateTime(2024, 3, 22, 7, 30),
-        description: 'Absensi masuk tepat waktu',
-        reason: 'Regular attendance',
-        month: 'Maret',
-      ),
-      LogAbsensi(
-        id: 'M001',
-        type: 'Clock In',
-        timestamp: DateTime(2024, 3, 22, 7, 30),
-        status: 'Approved',
-        employeeId: 'EMP001',
-        employeeName: 'John Doe',
-        department: 'IT',
-        position: 'Software Engineer',
-        startDate: DateTime(2024, 3, 22, 7, 30),
-        endDate: DateTime(2024, 3, 22, 7, 30),
-        description: 'Absensi masuk tepat waktu',
-        reason: 'Regular attendance',
-        month: 'Maret',
-      ),
-    ];
+class Shift {
+  final String name;
+  final String startTime;
+  final String endTime;
+
+  Shift({
+    required this.name,
+    required this.startTime,
+    required this.endTime,
+  });
+
+  factory Shift.fromJson(Map<String, dynamic> json) {
+    return Shift(
+      name: json['name'] ?? '',
+      startTime: json['startTime'] ?? '',
+      endTime: json['endTime'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'startTime': startTime,
+      'endTime': endTime,
+    };
+  }
+}
+
+class Location {
+  final String type;
+  final List<double> coordinates;
+
+  Location({
+    required this.type,
+    required this.coordinates,
+  });
+
+  factory Location.fromJson(Map<String, dynamic> json) {
+    return Location(
+      type: json['type'] ?? '',
+      coordinates: List<double>.from(json['coordinates'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'coordinates': coordinates,
+    };
   }
 }

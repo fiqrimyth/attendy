@@ -825,19 +825,19 @@ class _ApplicationAbsencePermitScreenState
                                       headerForegroundColor: Colors.black,
                                       surfaceTintColor: Colors.white,
                                       dayBackgroundColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(MaterialState.selected)) {
+                                            .contains(WidgetState.selected)) {
                                           return Theme.of(context).primaryColor;
                                         }
                                         return null;
                                       }),
                                       todayBackgroundColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(MaterialState.selected)) {
+                                            .contains(WidgetState.selected)) {
                                           return Theme.of(context).primaryColor;
                                         }
                                         return Colors.transparent;
@@ -847,25 +847,25 @@ class _ApplicationAbsencePermitScreenState
                                         width: 1,
                                       ),
                                       dayForegroundColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(MaterialState.selected)) {
+                                            .contains(WidgetState.selected)) {
                                           return Colors.white;
                                         }
                                         return Colors.black;
                                       }),
                                       yearForegroundColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                               (states) {
                                         if (states
-                                            .contains(MaterialState.selected)) {
+                                            .contains(WidgetState.selected)) {
                                           return Colors.white;
                                         }
                                         return Colors.black;
                                       }),
                                       dayOverlayColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                               (states) {
                                         return Colors.transparent;
                                       }),

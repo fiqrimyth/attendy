@@ -85,11 +85,12 @@ class _AbsenceDetailPermitScreenState extends State<AbsenceDetailPermitScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        _buildDetailItem('Kategori Izin', _permit?.type ?? '-'),
+                        _buildDetailItem(
+                            'Kategori Izin', _permit?.leaveCategory ?? '-'),
                         _buildDivider(),
                         _buildDetailItem(
                           'Tanggal Izin',
-                          _permit?.date ?? '-',
+                          _permit?.createdAt.toString() ?? '-',
                           suffix: SvgPicture.asset(
                             'assets/icon/linear/calendar.svg',
                             colorFilter: const ColorFilter.mode(
@@ -100,14 +101,14 @@ class _AbsenceDetailPermitScreenState extends State<AbsenceDetailPermitScreen> {
                         ),
                         _buildDivider(),
                         _buildDetailItem(
-                            'Delegasikan ke', _permit?.delegate ?? '-'),
+                            'Delegasikan ke', _permit?.delegatedTo ?? '-'),
+                        _buildDivider(),
+                        _buildDetailItem('Unggah File',
+                            _permit?.attachmentFile?.fileName ?? '-'),
                         _buildDivider(),
                         _buildDetailItem(
-                            'Unggah File', _permit?.fileName ?? '-'),
-                        _buildDivider(),
-                        _buildDetailItem(
-                            'Alasan Izin', _permit?.description ?? ''),
-                        if (_permit?.fileUrl != null) ...[
+                            'Alasan Izin', _permit?.leaveReason ?? ''),
+                        if (_permit?.attachmentFile != null) ...[
                           const SizedBox(height: 32),
                           const Text(
                             'File Attachment',
@@ -142,7 +143,7 @@ class _AbsenceDetailPermitScreenState extends State<AbsenceDetailPermitScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    _permit?.fileName ?? '',
+                                    _permit?.attachmentFile?.fileName ?? '',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.black87,

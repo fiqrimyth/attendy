@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:attendy/screen/notification/notification_screen.dart';
 import 'package:attendy/service/datetime_service.dart';
+import 'package:attendy/service/attendance_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -50,13 +51,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Position? _currentPosition;
 
   // Tambahkan list untuk menyimpan log absensi
-  List<LogAbsensi> _logAbsensi = [];
-
-  // Tambahkan variable untuk role
-  // String _userRole = ''; // Bisa diisi: 'staff', 'supervisor', 'manager', dll
+  final List<LogAbsensi> _logAbsensi = [];
 
   // Tambahkan variable untuk jumlah notifikasi approval
   int _approvalCount = 3; // Nanti bisa diupdate dari API
+
+  // Tambahkan loading state
+  bool _isLoadingHistory = false;
 
   @override
   void initState() {
@@ -65,11 +66,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _timer =
         Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
 
-    // Load user data
+    // Load semua data
     _loadUserData();
     _getCurrentLocation();
     _loadAttendanceState();
     _getApprovalCount();
+    _loadAttendanceHistory();
   }
 
   @override
@@ -82,15 +84,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _getTime() async {
     try {
       final DateTime now = await _dateTimeService.getServerDateTime();
-      debugPrint('=== DateTime Debug ===');
-      debugPrint('Raw server datetime: ${now.toIso8601String()}');
 
       final String formattedTime = DateFormat('HH:mm:ss').format(now);
       final String formattedDate =
           DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(now);
-      debugPrint('Formatted time: $formattedTime');
-      debugPrint('Formatted date: $formattedDate');
-      debugPrint('===================');
 
       if (mounted) {
         setState(() {
@@ -99,11 +96,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error getting server time: $e');
-      debugPrint('Stack trace: ${e is Error ? e.stackTrace : ''}');
       // Fallback ke waktu device jika gagal
       final DateTime now = DateTime.now();
-      debugPrint('Fallback to device time: ${now.toIso8601String()}');
 
       if (mounted) {
         setState(() {
@@ -485,7 +479,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 Text(
                   DateFormat('dd MMM yyyy, HH:mm', 'id_ID')
-                      .format(log.timestamp),
+                      .format(DateTime.parse(log.date)),
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 13,
@@ -514,16 +508,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Fungsi untuk mendapatkan role user
-  // Future<void> _getUserRole() async {
-  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     _userRole = prefs.getString('userRole') ?? 'staff';
-  //   });
-  // }
-
   List<MenuItemData> _getAllMenus() {
-    return [
+    // Filter menu berdasarkan jobType
+    final List<MenuItemData> menus = [
       MenuItemData(
         icon: 'assets/icon/linear/stetoscop_blue.svg',
         label: 'Izin Absen',
@@ -551,72 +538,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MenuItemData(
         icon: 'assets/icon/linear/calendar_2_blue.svg',
         label: 'Kalender',
-        onTap: () {}, // Implementasi kalender
-      ),
-      MenuItemData(
-        icon: 'assets/icon/linear/tick-circle_blue.svg',
-        label: 'Approval',
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ApprovalScreen()),
-        ), // Implementasi approval screen
-        badge: _approvalCount, // Tambahkan badge count
+        onTap: () {},
       ),
     ];
-  }
 
-  // Fungsi untuk mendapatkan menu berdasarkan role
-  // List<MenuItemData> _getMenuByRole() {
-  //   if (_userRole == 'staff') {
-  //     return [
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/stetoscop_blue.svg',
-  //         label: 'Izin Absen',
-  //         onTap: () => Navigator.push(
-  //           context,
-  //           MaterialPageRoute(
-  //               builder: (context) => const AbsencePermitScreen()),
-  //         ),
-  //       ),
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/calendar_blue.svg',
-  //         label: 'Ajukan Cuti',
-  //         onTap: () => Navigator.push(
-  //           context,
-  //           MaterialPageRoute(builder: (context) => const LeavePermitScreen()),
-  //         ),
-  //       ),
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/history_blue.svg',
-  //         label: 'Ajukan Lembur',
-  //         onTap: () => Navigator.push(
-  //           context,
-  //           MaterialPageRoute(
-  //               builder: (context) => const OvertimePermitScreen()),
-  //         ),
-  //       ),
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/calendar_2_blue.svg',
-  //         label: 'Kalender',
-  //         onTap: () {}, // Implementasi kalender
-  //       ),
-  //     ];
-  //   } else {
-  //     // Menu untuk supervisor/manager
-  //     return [
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/clock.svg',
-  //         label: 'Approval',
-  //         onTap: () {}, // Implementasi approval screen
-  //       ),
-  //       MenuItemData(
-  //         icon: 'assets/icon/linear/document.svg',
-  //         label: 'Report',
-  //         onTap: () {}, // Implementasi report screen
-  //       ),
-  //     ];
-  //   }
-  // }
+    // Tambahkan menu approval hanya jika user bukan Staff
+    if (_userJob.toLowerCase() != 'staff') {
+      menus.add(
+        MenuItemData(
+          icon: 'assets/icon/linear/tick-circle_blue.svg',
+          label: 'Approval',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ApprovalScreen()),
+          ),
+          badge: _approvalCount,
+        ),
+      );
+    }
+
+    return menus;
+  }
 
   // Fungsi untuk mendapatkan jumlah approval yang pending
   Future<void> _getApprovalCount() async {
@@ -624,6 +566,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _approvalCount = 3; // Contoh data statis
     });
+  }
+
+  // Tambahkan fungsi untuk load attendance history
+  Future<void> _loadAttendanceHistory() async {
+    try {
+      setState(() => _isLoadingHistory = true);
+
+      // Dapatkan user terlebih dahulu
+      final user = await AuthService.instance.getUser();
+      if (user == null) throw Exception('User tidak ditemukan');
+
+      // Panggil API dengan userId
+      final history =
+          await AttendanceService().getAttendanceHistory(user.userId);
+
+      if (mounted) {
+        setState(() {
+          _logAbsensi.clear();
+          _logAbsensi.addAll(history);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading attendance history: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat riwayat absensi')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+      }
+    }
   }
 
   @override
@@ -873,8 +848,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                  // Ganti bagian empty state dengan ini
-                  if (_logAbsensi.isEmpty) ...[
+                  // Update bagian tampilan log absensi
+                  if (_isLoadingHistory) ...[
+                    const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ] else if (_logAbsensi.isEmpty) ...[
                     Center(
                       child: Column(
                         children: [
@@ -951,11 +930,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Update fungsi refresh data
+  // Update fungsi refresh untuk memanggil load history
   Future<void> _refreshData() async {
-    await _loadUserData();
-    await _loadAttendanceState();
-    await _getCurrentLocation();
-    await _getApprovalCount();
+    await Future.wait([
+      _loadUserData(),
+      _loadAttendanceState(),
+      _getCurrentLocation(),
+      _getApprovalCount(),
+      _loadAttendanceHistory(),
+    ]);
   }
 }

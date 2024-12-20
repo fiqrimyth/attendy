@@ -16,7 +16,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<AttendanceProvider>();
       provider.fetchAttendanceHistory();
     });
@@ -197,7 +197,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    DateFormat('HH:mm').format(record.startDate),
+                    DateFormat('HH:mm').format(record.time),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -206,7 +206,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('dd MMMM yyyy', 'id_ID')
-                        .format(record.startDate),
+                        .format(DateTime.parse(record.date)),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[600],

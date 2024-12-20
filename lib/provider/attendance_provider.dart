@@ -1,7 +1,9 @@
 import 'package:attendy/model/log_absensi.dart';
+import 'package:attendy/model/user.dart';
 import 'package:attendy/service/attendance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences.dart';
 
 class AttendanceProvider extends ChangeNotifier {
   final AttendanceService _service = AttendanceService();
@@ -10,14 +12,11 @@ class AttendanceProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  AttendanceProvider();
+
   Map<String, List<LogAbsensi>> get groupedAttendance => _groupedAttendance;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
-  void setData(Map<String, List<LogAbsensi>> data) {
-    _groupedAttendance = data;
-    notifyListeners();
-  }
 
   Future<void> fetchAttendanceHistory() async {
     _isLoading = true;
@@ -25,13 +24,28 @@ class AttendanceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final List<LogAbsensi> logs = await _service.getAttendanceHistory();
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
+
+      if (userId == null) {
+        throw Exception('User ID tidak ditemukan');
+      }
+
+      debugPrint('Fetching attendance history for user: $userId');
+      final List<LogAbsensi> logs = await _service.getAttendanceHistory(userId);
+      debugPrint('Logs received: ${logs.length}');
+
       _groupedAttendance = _groupAttendanceByMonth(logs);
+      debugPrint('Grouped attendance: ${_groupedAttendance.length} months');
+
       _isLoading = false;
+      _error = null;
       notifyListeners();
     } catch (e) {
+      debugPrint('Error in fetchAttendanceHistory: $e');
       _error = e.toString();
       _isLoading = false;
+      _groupedAttendance = {};
       notifyListeners();
     }
   }
@@ -40,7 +54,8 @@ class AttendanceProvider extends ChangeNotifier {
     Map<String, List<LogAbsensi>> grouped = {};
 
     for (var log in logs) {
-      String monthYear = DateFormat('MMMM yyyy', 'id_ID').format(log.timestamp);
+      String monthYear =
+          DateFormat('MMMM yyyy', 'id_ID').format(DateTime.parse(log.date));
       if (!grouped.containsKey(monthYear)) {
         grouped[monthYear] = [];
       }
