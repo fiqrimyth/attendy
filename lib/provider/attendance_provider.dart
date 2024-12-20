@@ -1,9 +1,8 @@
 import 'package:attendy/model/log_absensi.dart';
-import 'package:attendy/model/user.dart';
 import 'package:attendy/service/attendance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AttendanceProvider extends ChangeNotifier {
   final AttendanceService _service = AttendanceService();
